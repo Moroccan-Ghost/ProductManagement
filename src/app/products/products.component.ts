@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {ProductService} from "../services/product.service";
 import {Product} from "../model/product.model";
+import {Router} from "@angular/router"
 
 @Component({
   selector: 'app-products',
@@ -10,20 +11,25 @@ import {Product} from "../model/product.model";
 export class ProductsComponent implements OnInit{
   public products : Array<Product> = []
   public keyword : string = ""
-  constructor(private productService:ProductService) {
+  totalPages:number = 0
+  pageSize:number = 3
+  currentPage:number=1
+  constructor(private productService:ProductService, private router :Router) {
 
   }
 
   ngOnInit() {
-    this.getProducts()
+    this.searchProducts()
   }
 
-  getProducts(){
-    this.productService.getProducts(1,2)
+  searchProducts(){
+    this.productService.searchProducts(this.keyword,this.currentPage,this.pageSize)
       .subscribe(
         {
-          next : data => {
-            this.products = data
+          next : (resp) => {
+            this.products= resp.body as Product[]
+            let totalProducts:number = parseInt(resp.headers.get('x-total-count')!)
+            this.totalPages = Math.ceil(totalProducts/this.pageSize)
           },
           error: err => {
             console.log(err)
@@ -65,14 +71,12 @@ export class ProductsComponent implements OnInit{
     )
   }
 
-  searchProducts() {
-    this.productService.searchProducts(this.keyword).subscribe(
-      {
-        next: data=>{
-          this.products =data
-        },
-        error: err => console.log(err)
-      }
-    )
+    handleGotoPage(page: number) {
+    this.currentPage = page
+    this.searchProducts()
+  }
+
+  handleEditProduct(product : Product) {
+    this.router.navigateByUrl(`/editProduct/${product.id}`)
   }
 }
